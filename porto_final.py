@@ -88,7 +88,7 @@ if display_buses:
 
 # מפה
 m = folium.Map(location=[user_lat, user_lon], zoom_start=16)
-folium.Marker([user_lat, user_lon], tooltip="You are here", icon=folium.Icon(color='blue', icon='user', prefix='fa')).add_to(m)
+folium.Marker([user_lat, user_lon], tooltip="You are here", icon=folium.Icon(color='red', icon='user', prefix='fa')).add_to(m)
 
 for b in display_buses:
     icon_html = f'<div style="background-color: #00ccff; width: 30px; height: 30px; border-radius: 50%; border: 2px solid white; display: flex; align-items: center; justify-content: center; color: black; transform: rotate({b["heading"]}deg); font-weight: bold;">↑</div><div style="background: rgba(0,0,0,0.8); padding: 1px 3px; border-radius: 3px; font-size: 10px; position: absolute; top: 32px; color: white; white-space: nowrap;">{b["line"]}</div>'
