@@ -137,9 +137,27 @@ for e in buses_raw:
 
 display_buses = sorted(all_buses, key=lambda x: x['dist'])[:10] if target == "Nearby Buses" else [b for b in all_buses if b['line'] == target]
 
+#if display_buses:
+  #  closest = min(display_buses, key=lambda x: x['dist'])
+   # st.info(f"🚍 Closest: **Line {closest['line']}** is **{closest['dist']:.2f} km** away")
+
 if display_buses:
     closest = min(display_buses, key=lambda x: x['dist'])
-    st.info(f"🚍 Closest: **Line {closest['line']}** is **{closest['dist']:.2f} km** away")
+    # שימוש ב-Markdown עם HTML כדי לעקוף את בעיות הצבע של Streamlit
+    st.markdown(f"""
+        <div style="
+            background-color: #262730; 
+            border: 1px solid #00ccff; 
+            padding: 10px; 
+            border-radius: 5px; 
+            text-align: center; 
+            color: white; 
+            margin-top: 8px;
+            margin-bottom: 8px;">
+            🚍 Closest: <span style="color: #ffff00; font-weight: bold;">Line {closest['line']}</span> 
+            is <span style="color: #ffff00; font-weight: bold;">{closest['dist']:.2f} km</span> away
+        </div>
+    """, unsafe_allow_html=True)
 
 # מפה
 m = folium.Map(location=[user_lat, user_lon], zoom_start=16)
