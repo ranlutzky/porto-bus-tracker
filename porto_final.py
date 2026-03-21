@@ -75,6 +75,14 @@ def get_bus_data():
         return r.json() if r.status_code == 200 else []
     except: return []
 
+# פונקציה חדשה וזהירה לשליפת תחנות
+def get_stops_sample():
+    url = "https://broker.fiware.urbanplatform.portodigital.pt/v2/entities?type=busStop&limit=10"
+    try:
+        r = requests.get(url, verify=False, timeout=5)
+        return r.json() if r.status_code == 200 else []
+    except: return []
+
 # --- ממשק משתמש ---
 st.markdown('<p class="custom-label">SELECT BUS LINE</p>', unsafe_allow_html=True)
 buses_raw = get_bus_data()
@@ -112,38 +120,31 @@ folium.Marker([user_lat, user_lon], icon=folium.Icon(color='red', icon='user', p
 for b in display_buses:
     line_number = str(b['line']).strip()
     stcp_url = f"https://stcp.pt/en/line?line={line_number}"
-    
-    popup_content = f"""
-    <div style="font-family: sans-serif; font-size: 14px; text-align: center; min-width: 160px;">
-        <b style="font-size: 16px;">Line {line_number}</b><br>
-        <hr style="margin: 8px 0; border: 0; border-top: 1px solid #eee;">
-        <a href="{stcp_url}" target="_blank" style="color: #00ccff; text-decoration: underline; font-weight: bold; display: block; padding: 5px;">
-            View Full Route & Schedule
-        </a>
-    </div>
-    """
-    
     icon_html = f'<div style="background-color: #00ccff; width: 30px; height: 30px; border-radius: 50%; border: 2px solid white; display: flex; align-items: center; justify-content: center; color: black; transform: rotate({b["heading"]}deg); font-weight: bold;">↑</div><div style="background: rgba(0,0,0,0.8); padding: 1px 3px; border-radius: 3px; font-size: 10px; position: absolute; top: 32px; color: white; white-space: nowrap;">{b["line"]}</div>'
-    
-    folium.Marker(
-        location=[b['lat'], b['lon']], 
-        icon=folium.DivIcon(icon_size=(30, 30), icon_anchor=(15, 15), html=icon_html),
-        popup=folium.Popup(popup_content, max_width=300)
-    ).add_to(m)
+    folium.Marker(location=[b['lat'], b['lon']], icon=folium.DivIcon(icon_size=(30, 30), icon_anchor=(15, 15), html=icon_html)).add_to(m)
 
 st_folium(m, width=None, height=450, key=f"map_v23_{target}_{st.session_state.location_mode}", use_container_width=True)
 
-# --- כפתורי מיקום ---
+# כפתורי מיקום
 col1, col2 = st.columns(2)
 with col1:
     if st.button("📍 MY LOCATION", use_container_width=True):
-        st.session_state.location_mode = 'gps'
-        st.rerun()
+        st.session_state.location_mode = 'gps'; st.rerun()
 with col2:
     if st.button("🏠 HOME (PORTO)", use_container_width=True):
         st.session_state.location_mode = 'manual'
-        st.session_state.map_center = (41.1485, -8.6110)
-        st.rerun()
+        st.session_state.map_center = (41.1485, -8.6110); st.rerun()
+
+# --- בדיקה של התחנות (בצורה זהירה) ---
+st.write("---")
+st.write("🔍 Testing Stops API...")
+stops_sample = get_stops_sample()
+if stops_sample:
+    st.success(f"Found {len(stops_sample)} stops! The API is working.")
+    for s in stops_sample[:3]:
+        st.text(f"📍 {s.get('name', {}).get('value', 'No Name')}")
+else:
+    st.error("Could not fetch stops. API might be slow or blocked.")
 
 # רענון (45 שניות)
 t_place = st.empty()
