@@ -15,7 +15,7 @@ if 'map_center' not in st.session_state:
 if 'location_mode' not in st.session_state:
     st.session_state.location_mode = 'gps'
 
-# CSS מעודכן: טקסט בהיר לכפתורים ולטיימר
+# CSS מעודכן: תיקון סופי לטקסט בתוך ה-st.info
 st.markdown("""
     <style>
     .stApp { background-color: #1e1e1e !important; }
@@ -38,16 +38,15 @@ st.markdown("""
         text-transform: uppercase;
     }
 
-    /* כפתורים עם טקסט לבן בוהק */
+    /* כפתורים */
     .stButton>button {
         width: 100%;
         background-color: #333333 !important;
-        color: #ffffff !important; /* לבן בוהק */
+        color: #ffffff !important;
         border: 1px solid #555 !important;
         height: 70px !important; 
-        padding: 0px !important;
         font-size: 12px !important;
-        font-weight: 800 !important; /* טקסט עבה יותר */
+        font-weight: 800 !important;
         margin-top: 0px !important;
     }
     .stButton>button:hover { border-color: #00ccff !important; color: #00ccff !important; }
@@ -60,18 +59,22 @@ st.markdown("""
     }
     div[data-baseweb="select"] * { color: white !important; }
 
-    /* טקסט המרחק */
-    .stInfo { 
-        background-color: #262730 !important; 
-        border: 1px solid #00ccff !important; 
-        color: #ffffff !important; 
-        text-align: center;
-        padding: 0.4rem !important;
-        margin-top: 8px !important;
+    /* תיבת המרחק - תיקון צבע טקסט אגרסיבי */
+    [data-testid="stNotification"] {
+        background-color: #262730 !important;
+        border: 1px solid #00ccff !important;
     }
-    .stInfo b, .stInfo strong { color: #ffff00 !important; }
+    [data-testid="stNotification"] div {
+        color: #ffffff !important; /* כופה לבן על כל הדיבים הפנימיים */
+    }
+    .stInfo p, .stInfo span, .stInfo div {
+        color: #ffffff !important;
+    }
+    .stInfo b, .stInfo strong {
+        color: #ffff00 !important; /* צהוב להדגשה */
+    }
 
-    /* טיימר רענון למטה - טקסט לבן */
+    /* טיימר רענון */
     .refresh-text {
         color: #ffffff !important;
         font-size: 14px;
@@ -119,27 +122,18 @@ with col_search:
         except: return []
     
     buses_raw = get_bus_data()
-    active_lines = []
-    for e in buses_raw:
-        name = str(e.get('name', {}).get('value', ''))
-        parts = name.split()
-        if len(parts) >= 2 and parts[1].isdigit(): active_lines.append(parts[1])
-    
+    active_lines = [str(e.get('name', {}).get('value', '')).split()[1] for e in buses_raw if len(str(e.get('name', {}).get('value', '')).split()) >= 2 and str(e.get('name', {}).get('value', '')).split()[1].isdigit()]
     unique_lines = sorted(list(set(active_lines)), key=lambda x: int(x))
     target = st.selectbox("Line:", ["Nearby Buses"] + unique_lines, label_visibility="collapsed")
 
 # עיבוד נתונים
 all_buses = []
 for e in buses_raw:
-    name = str(e.get('name', {}).get('value', ''))
-    parts = name.split()
+    parts = str(e.get('name', {}).get('value', '')).split()
     if len(parts) >= 2:
         coords = e.get('location', {}).get('value', {}).get('coordinates', [0,0])
-        if len(coords) == 2:
-            l_num = parts[1]
-            b_lat, b_lon = coords[1], coords[0]
-            dist = haversine(user_lat, user_lon, b_lat, b_lon)
-            all_buses.append({'line': l_num, 'lat': b_lat, 'lon': b_lon, 'dist': dist, 'heading': e.get('heading', {}).get('value', 0)})
+        dist = haversine(user_lat, user_lon, coords[1], coords[0])
+        all_buses.append({'line': parts[1], 'lat': coords[1], 'lon': coords[0], 'dist': dist, 'heading': e.get('heading', {}).get('value', 0)})
 
 display_buses = sorted(all_buses, key=lambda x: x['dist'])[:10] if target == "Nearby Buses" else [b for b in all_buses if b['line'] == target]
 
@@ -155,9 +149,9 @@ for b in display_buses:
     icon_html = f'<div style="background-color: #00ccff; width: 30px; height: 30px; border-radius: 50%; border: 2px solid white; display: flex; align-items: center; justify-content: center; color: black; transform: rotate({b["heading"]}deg); font-weight: bold;">↑</div><div style="background: rgba(0,0,0,0.8); padding: 1px 3px; border-radius: 3px; font-size: 10px; position: absolute; top: 32px; color: white; white-space: nowrap;">{b["line"]}</div>'
     folium.Marker(location=[b['lat'], b['lon']], icon=folium.DivIcon(icon_size=(30, 30), icon_anchor=(15, 15), html=icon_html)).add_to(m)
 
-st_folium(m, width=None, height=480, key=f"map_v12_{target}_{st.session_state.location_mode}", use_container_width=True)
+st_folium(m, width=None, height=480, key=f"map_v13_{target}_{st.session_state.location_mode}", use_container_width=True)
 
-# רענון עם עיצוב טקסט לבן
+# רענון
 t_place = st.empty()
 for i in range(30, 0, -1):
     t_place.markdown(f'<p class="refresh-text">Refreshing in <b>{i}s</b>...</p>', unsafe_allow_html=True)
