@@ -15,7 +15,7 @@ if 'map_center' not in st.session_state:
 if 'location_mode' not in st.session_state:
     st.session_state.location_mode = 'gps'
 
-# 3. CSS "סופר-אגרסיבי" לעיצוב הממשק
+# 3. CSS לעיצוב הממשק
 st.markdown("""
     <style>
     .stApp { background-color: #1e1e1e !important; }
@@ -110,15 +110,13 @@ m = folium.Map(location=[user_lat, user_lon], zoom_start=16)
 folium.Marker([user_lat, user_lon], icon=folium.Icon(color='red', icon='user', prefix='fa')).add_to(m)
 
 for b in display_buses:
-    # ניקוי מספר הקו למקרה שיש רווחים מיותרים
     line_id = str(b['line']).strip()
     
-    # כתובת מעודכנת ויציבה יותר (עובדת בדרך כלל לכל הקווים)
-    stcp_url = f"https://www.stcp.pt/en/travel/lines/?linha={line_id}"
+    # הכתובת המתוקנת - שימוש ב-LINHA באותיות גדולות והוספת האות L לפני המספר
+    stcp_url = f"https://www.stcp.pt/en/travel/lines/?LINHA=L{line_id}&sentido=0"
     
-    # עיצוב ה-Popup ב-HTML
     popup_content = f"""
-    <div style="font-family: sans-serif; font-size: 14px; text-align: center; min-width: 150px;">
+    <div style="font-family: sans-serif; font-size: 14px; text-align: center; min-width: 160px;">
         <b style="font-size: 16px;">Line {line_id}</b><br>
         <hr style="margin: 8px 0; border: 0; border-top: 1px solid #eee;">
         <a href="{stcp_url}" target="_blank" style="color: #00ccff; text-decoration: underline; font-weight: bold; display: block; padding: 5px;">
@@ -135,14 +133,7 @@ for b in display_buses:
         popup=folium.Popup(popup_content, max_width=300)
     ).add_to(m)
 
-
-    folium.Marker(
-        location=[b['lat'], b['lon']], 
-        icon=folium.DivIcon(icon_size=(30, 30), icon_anchor=(15, 15), html=icon_html),
-        popup=folium.Popup(popup_content, max_width=250)
-    ).add_to(m)
-
-st_folium(m, width=None, height=450, key=f"map_v21_{target}_{st.session_state.location_mode}", use_container_width=True)
+st_folium(m, width=None, height=450, key=f"map_v22_{target}_{st.session_state.location_mode}", use_container_width=True)
 
 # --- כפתורי מיקום ---
 col1, col2 = st.columns(2)
