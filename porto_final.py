@@ -15,7 +15,7 @@ if 'map_center' not in st.session_state:
 if 'location_mode' not in st.session_state:
     st.session_state.location_mode = 'gps'
 
-# 3. CSS מעודכן - כפתורים נמוכים יותר ורחבים (50/50)
+# 3. CSS "אגרסיבי" - כפתורים רחבים (50/50) ונמוכים יותר
 st.markdown("""
     <style>
     .stApp { background-color: #1e1e1e !important; }
@@ -30,20 +30,29 @@ st.markdown("""
         margin: auto !important;
     }
 
-    /* כפתורים - גובה מופחת (45px) ורוחב מקסימלי */
+    /* תיקון לכפתורים: הכרחת רוחב מלא בתוך העמודה */
+    div.stButton {
+        width: 100% !important;
+    }
+    
     div.stButton > button {
         width: 100% !important;
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
         background-color: #333333 !important;
         color: #ffffff !important;
         border: 1px solid #555 !important;
-        height: 45px !important; 
+        height: 45px !important; /* גובה מופחת לפי בקשתך */
         font-size: 13px !important;
         font-weight: bold !important;
         border-radius: 6px !important;
-        padding: 0px !important;
+        margin: 0px !important;
     }
     
-    /* תיקון למרווחים בין עמודות הכפתורים */
+    div.stButton > button:hover { border-color: #00ccff !important; color: #00ccff !important; }
+
+    /* הסרת מרווחים מהעמודות ליישור מושלם עם המפה */
     [data-testid="column"] {
         padding-left: 2px !important;
         padding-right: 2px !important;
@@ -135,7 +144,7 @@ for b in display_buses:
 
 st_folium(m, width=None, height=450, key=f"map_v19_{target}_{st.session_state.location_mode}", use_container_width=True)
 
-# --- כפתורי מיקום: 50/50 מתחת למפה ---
+# --- כפתורי מיקום: 50/50 בשורה אחת ---
 col1, col2 = st.columns(2)
 
 with col1:
