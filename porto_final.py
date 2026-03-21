@@ -15,27 +15,27 @@ if 'map_center' not in st.session_state:
 if 'location_mode' not in st.session_state:
     st.session_state.location_mode = 'gps'
 
-# --- רשימת תחנות סטטית (דוגמה לכיסוי מרכזי) ---
-# הערה: כאן הכנסתי כ-15 תחנות מרכזיות. אם זה עובד לך טוב, נוסיף עוד 300 בבת אחת.
+# --- רשימת תחנות סטטית מורחבת (דוגמה לכיסוי צפוף יותר) ---
+# הוספתי כאן תחנות שסובבות את Praça da República וצירים ראשיים
 STATIC_STOPS = [
     {"name": "Praça da República", "lat": 41.1554, "lon": -8.6133},
-    {"name": "Trindade", "lat": 41.1523, "lon": -8.6125},
-    {"name": "Aliados", "lat": 41.1485, "lon": -8.6110},
-    {"name": "S. Bento", "lat": 41.1456, "lon": -8.6103},
-    {"name": "Cordoaria", "lat": 41.1465, "lon": -8.6148},
-    {"name": "Bolhão", "lat": 41.1498, "lon": -8.6061},
-    {"name": "Casa da Música", "lat": 41.1587, "lon": -8.6307},
-    {"name": "Rotunda Boavista", "lat": 41.1579, "lon": -8.6291},
-    {"name": "Hospital S. João", "lat": 41.1804, "lon": -8.6015},
-    {"name": "Campanhã", "lat": 41.1492, "lon": -8.5855},
-    {"name": "Marquês", "lat": 41.1602, "lon": -8.6061},
-    {"name": "Faculdade de Letras", "lat": 41.1495, "lon": -8.6355},
-    {"name": "Ribeira", "lat": 41.1405, "lon": -8.6115},
-    {"name": "Jardim do Morro", "lat": 41.1385, "lon": -8.6095},
-    {"name": "Praça de Gomes Teixeira", "lat": 41.1475, "lon": -8.6165}
+    {"name": "Pr. República (South)", "lat": 41.1548, "lon": -8.6136},
+    {"name": "Pr. República (West)", "lat": 41.1556, "lon": -8.6145},
+    {"name": "Gonçalo Cristóvão", "lat": 41.1541, "lon": -8.6105},
+    {"name": "Trindade Metro", "lat": 41.1523, "lon": -8.6125},
+    {"name": "Aliados (Main)", "lat": 41.1485, "lon": -8.6110},
+    {"name": "S. Bento Station", "lat": 41.1456, "lon": -8.6103},
+    {"name": "Cordoaria / Clérigos", "lat": 41.1465, "lon": -8.6148},
+    {"name": "Bolhão Market", "lat": 41.1498, "lon": -8.6061},
+    {"name": "Lapa Metro", "lat": 41.1560, "lon": -8.6160},
+    {"name": "Paraíso", "lat": 41.1575, "lon": -8.6120},
+    {"name": "Antero de Quental", "lat": 41.1595, "lon": -8.6130},
+    {"name": "Marquês Hub", "lat": 41.1602, "lon": -8.6061},
+    {"name": "Carolina Michaelis", "lat": 41.1585, "lon": -8.6215},
+    {"name": "Cedofeita", "lat": 41.1525, "lon": -8.6180}
 ]
 
-# 3. CSS (v23)
+# 3. CSS (v23 היציב)
 st.markdown("""
     <style>
     .stApp { background-color: #1e1e1e !important; }
@@ -66,7 +66,7 @@ def get_bus_data():
         return r.json() if r.status_code == 200 else []
     except: return []
 
-# --- ממשק משתמש ---
+# --- ממשק ---
 st.markdown('<p class="custom-label">SELECT BUS LINE</p>', unsafe_allow_html=True)
 buses_raw = get_bus_data()
 
@@ -90,35 +90,35 @@ for e in buses_raw:
 
 display_buses = sorted(all_buses, key=lambda x: x['dist'])[:10] if target == "Nearby Buses" else [b for b in all_buses if b['line'] == target]
 
-# --- בניית המפה ---
-m = folium.Map(location=[user_lat, user_lon], zoom_start=16)
+# --- מפה ---
+m = folium.Map(location=[user_lat, user_lon], zoom_start=17) # הגדלתי מעט את הזום הראשוני
 folium.Marker([user_lat, user_lon], icon=folium.Icon(color='red', icon='user', prefix='fa')).add_to(m)
 
-# הוספת התחנות הסטטיות (רק אם בטווח 300 מטר)
+# ציור התחנות (עיגולים לבנים עם מסגרת כחולה)
 for stop in STATIC_STOPS:
     stop_dist = haversine(user_lat, user_lon, stop['lat'], stop['lon'])
-    if stop_dist <= 0.3: # פילטר 300 מטר
+    if stop_dist <= 0.4: # רדיוס של 400 מטר ליתר ביטחון
         folium.CircleMarker(
             location=[stop['lat'], stop['lon']],
-            radius=4, color='#ffffff', weight=2, fill=True, fill_color='#00ccff', fill_opacity=0.7,
+            radius=5, color='#ffffff', weight=2, fill=True, fill_color='#00ccff', fill_opacity=0.8,
             popup=f"🚏 {stop['name']}"
         ).add_to(m)
 
-# הוספת אוטובוסים (v23)
+# ציור האוטובוסים
 for b in display_buses:
     stcp_url = f"https://stcp.pt/en/line?line={b['line']}"
     popup_html = f'<div style="text-align:center; min-width:120px;"><b>Line {b["line"]}</b><br><a href="{stcp_url}" target="_blank" style="color:#00ccff;">Route & Schedule</a></div>'
-    icon_html = f'<div style="background-color: #00ccff; width: 30px; height: 30px; border-radius: 50%; border: 2px solid white; display: flex; align-items: center; justify-content: center; color: black; transform: rotate({b["heading"]}deg); font-weight: bold;">↑</div><div style="background: rgba(0,0,0,0.8); padding: 1px 3px; border-radius: 3px; font-size: 10px; position: absolute; top: 32px; color: white; white-space: nowrap;">{b["line"]}</div>'
+    icon_html = f'<div style="background-color: #00ccff; width: 30px; height: 30px; border-radius: 50%; border: 2px solid white; display: flex; align-items: center; justify-content: center; color: black; transform: rotate({b["heading"]}deg); font-weight: bold;">↑</div><div style="background: rgba(0,0,0,0.8); padding: 1px 3px; border-radius: 3px; font-size: 10px; position: absolute; top: 32px; color: white; white-space: nowrap; font-weight: bold;">{b["line"]}</div>'
     folium.Marker([b['lat'], b['lon']], icon=folium.DivIcon(icon_size=(30, 30), html=icon_html), popup=folium.Popup(popup_html, max_width=200)).add_to(m)
 
-st_folium(m, width=None, height=450, key="map_v41", use_container_width=True)
+st_folium(m, width=None, height=450, key=f"map_v42_{target}", use_container_width=True)
 
 # תיבת מרחק
 if display_buses:
     closest = min(display_buses, key=lambda x: x['dist'])
     st.markdown(f'<div class="distance-box">🚍 Closest: <b>Line {closest["line"]}</b> is <b>{closest["dist"]:.2f} km</b> away</div>', unsafe_allow_html=True)
 
-# כפתורים ורענון
+# כפתורים
 c1, c2 = st.columns(2)
 with c1:
     if st.button("📍 MY LOCATION"): st.session_state.location_mode = 'gps'; st.rerun()
@@ -128,6 +128,7 @@ with c2:
         st.session_state.map_center = (41.1485, -8.6110)
         st.rerun()
 
+# רענון
 t = st.empty()
 for i in range(45, 0, -1):
     t.markdown(f'<p class="refresh-text">Refreshing in <b>{i}s</b>...</p>', unsafe_allow_html=True)
