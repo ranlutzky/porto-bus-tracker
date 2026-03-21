@@ -13,7 +13,7 @@ st.set_page_config(page_title="Porto Bus Tracker", layout="wide")
 if 'map_center' not in st.session_state:
     st.session_state.map_center = (41.1485, -8.6110)
 
-# CSS: Mobile Optimized - Mobile First Design
+# CSS: Mobile Optimized - התיקון לגובה הכפתור נמצא כאן
 st.markdown("""
     <style>
     .stApp { background-color: #1e1e1e !important; }
@@ -37,13 +37,13 @@ st.markdown("""
         text-transform: uppercase;
     }
 
-    /* עיצוב כפתור ה-Home - גבוה יותר להתאמה מושלמת */
+    /* עיצוב כפתור ה-Home - הוגבה ל-66px ליישור מושלם */
     .stButton>button {
         width: 100%;
         background-color: #333333 !important;
         color: white !important;
         border: 1px solid #555 !important;
-        height: 62px !important; /* גובה שמשלב את הכותרת + התיבה */
+        height: 66px !important; 
         margin-top: 0px !important;
         display: flex;
         align-items: center;
@@ -82,7 +82,7 @@ def haversine(lat1, lon1, lat2, lon2):
     a = sin(dLat/2)**2 + cos(radians(lat1))*cos(radians(lat2))*sin(dLon/2)**2
     return R * 2 * asin(sqrt(a))
 
-# יצירת השורה העליונה
+# שורה עליונה
 col1, col2 = st.columns([2.2, 1])
 
 with col1:
@@ -145,7 +145,7 @@ for b in display_buses:
     icon_html = f'<div style="background-color: #00ccff; width: 30px; height: 30px; border-radius: 50%; border: 2px solid white; display: flex; align-items: center; justify-content: center; color: black; transform: rotate({b["heading"]}deg); font-weight: bold;">↑</div><div style="background: rgba(0,0,0,0.8); padding: 1px 3px; border-radius: 3px; font-size: 10px; position: absolute; top: 32px; color: white; white-space: nowrap;">{b["line"]}</div>'
     folium.Marker(location=[b['lat'], b['lon']], icon=folium.DivIcon(icon_size=(30, 30), icon_anchor=(15, 15), html=icon_html)).add_to(m)
 
-st_folium(m, width=None, height=480, key=f"map_v8_{target}", use_container_width=True)
+st_folium(m, width=None, height=480, key=f"map_v9_{target}", use_container_width=True)
 
 # רענון
 t_place = st.empty()
