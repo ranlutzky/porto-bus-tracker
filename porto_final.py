@@ -110,15 +110,18 @@ m = folium.Map(location=[user_lat, user_lon], zoom_start=16)
 folium.Marker([user_lat, user_lon], icon=folium.Icon(color='red', icon='user', prefix='fa')).add_to(m)
 
 for b in display_buses:
-    # יצירת הלינק הדינמי לאתר STCP
-    stcp_url = f"https://www.stcp.pt/en/itinerarium/index.php?line={b['line']}_1"
+    # ניקוי מספר הקו למקרה שיש רווחים מיותרים
+    line_id = str(b['line']).strip()
     
-    # עיצוב ה-Popup ב-HTML לפי בקשתך (תכלת עם קו תחתון)
+    # כתובת מעודכנת ויציבה יותר (עובדת בדרך כלל לכל הקווים)
+    stcp_url = f"https://www.stcp.pt/en/travel/lines/?linha={line_id}"
+    
+    # עיצוב ה-Popup ב-HTML
     popup_content = f"""
-    <div style="font-family: sans-serif; font-size: 14px; text-align: center;">
-        <b>Line {b['line']}</b><br>
-        <hr style="margin: 5px 0; border: 0; border-top: 1px solid #ccc;">
-        <a href="{stcp_url}" target="_blank" style="color: #00ccff; text-decoration: underline; font-weight: bold;">
+    <div style="font-family: sans-serif; font-size: 14px; text-align: center; min-width: 150px;">
+        <b style="font-size: 16px;">Line {line_id}</b><br>
+        <hr style="margin: 8px 0; border: 0; border-top: 1px solid #eee;">
+        <a href="{stcp_url}" target="_blank" style="color: #00ccff; text-decoration: underline; font-weight: bold; display: block; padding: 5px;">
             View Full Route & Schedule
         </a>
     </div>
@@ -126,6 +129,13 @@ for b in display_buses:
     
     icon_html = f'<div style="background-color: #00ccff; width: 30px; height: 30px; border-radius: 50%; border: 2px solid white; display: flex; align-items: center; justify-content: center; color: black; transform: rotate({b["heading"]}deg); font-weight: bold;">↑</div><div style="background: rgba(0,0,0,0.8); padding: 1px 3px; border-radius: 3px; font-size: 10px; position: absolute; top: 32px; color: white; white-space: nowrap;">{b["line"]}</div>'
     
+    folium.Marker(
+        location=[b['lat'], b['lon']], 
+        icon=folium.DivIcon(icon_size=(30, 30), icon_anchor=(15, 15), html=icon_html),
+        popup=folium.Popup(popup_content, max_width=300)
+    ).add_to(m)
+
+
     folium.Marker(
         location=[b['lat'], b['lon']], 
         icon=folium.DivIcon(icon_size=(30, 30), icon_anchor=(15, 15), html=icon_html),
