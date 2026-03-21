@@ -15,24 +15,17 @@ if 'map_center' not in st.session_state:
 if 'location_mode' not in st.session_state:
     st.session_state.location_mode = 'gps'
 
-# --- רשימת תחנות סטטית מורחבת (כיסוי Aliados + República) ---
+# --- רשימת תחנות סטטית (עם דגש על Aliados ו-República) ---
 STATIC_STOPS = [
-    # אזור Aliados / São Bento (איפה שהמפה שלך נפתחת בתמונה)
     {"name": "Aliados (Metro)", "lat": 41.1485, "lon": -8.6110},
     {"name": "Pr. Liberdade", "lat": 41.1478, "lon": -8.6112},
     {"name": "Av. Aliados", "lat": 41.1492, "lon": -8.6108},
     {"name": "S. Bento Station", "lat": 41.1456, "lon": -8.6103},
     {"name": "Estação S. Bento", "lat": 41.1458, "lon": -8.6112},
     {"name": "Sá da Bandeira", "lat": 41.1472, "lon": -8.6085},
-    
-    # אזור Praça da República
     {"name": "Praça da República", "lat": 41.1554, "lon": -8.6133},
     {"name": "República (South)", "lat": 41.1548, "lon": -8.6136},
-    {"name": "República (West)", "lat": 41.1556, "lon": -8.6145},
-    {"name": "Gonçalo Cristóvão", "lat": 41.1541, "lon": -8.6105},
     {"name": "Trindade", "lat": 41.1523, "lon": -8.6125},
-    
-    # צירים נוספים
     {"name": "Bolhão", "lat": 41.1498, "lon": -8.6061},
     {"name": "Cordoaria", "lat": 41.1465, "lon": -8.6148},
     {"name": "Casa da Música", "lat": 41.1587, "lon": -8.6307}
@@ -86,16 +79,20 @@ else:
 m = folium.Map(location=[u_lat, u_lon], zoom_start=17)
 folium.Marker([u_lat, u_lon], icon=folium.Icon(color='red', icon='user', prefix='fa')).add_to(m)
 
-# ציור תחנות (פילטר 400 מטר)
-stops_found = 0
+# ציור תחנות (סגול בולט עם Tooltip בריחוף)
 for stop in STATIC_STOPS:
     dist = haversine(u_lat, u_lon, stop['lat'], stop['lon'])
     if dist <= 0.4:
-        stops_found += 1
         folium.CircleMarker(
             location=[stop['lat'], stop['lon']],
-            radius=6, color='#ffffff', weight=2, fill=True, fill_color='#00ccff', fill_opacity=0.8,
-            popup=f"🚏 {stop['name']}"
+            radius=8, # גדול יותר
+            color='#ffffff', # מסגרת לבנה
+            weight=2,
+            fill=True,
+            fill_color='#9933ff', # סגול
+            fill_opacity=0.9,
+            tooltip=f"🚏 {stop['name']}", # מוצג בריחוף עכבר
+            popup=f"Stop: {stop['name']}" # מוצג בקליק
         ).add_to(m)
 
 # ציור אוטובוסים
@@ -115,7 +112,7 @@ for b in display_buses:
     icon_html = f'<div style="background-color: #00ccff; width: 30px; height: 30px; border-radius: 50%; border: 2px solid white; display: flex; align-items: center; justify-content: center; color: black; transform: rotate({b["heading"]}deg); font-weight: bold;">↑</div><div style="background: rgba(0,0,0,0.8); padding: 1px 3px; border-radius: 3px; font-size: 10px; position: absolute; top: 32px; color: white; white-space: nowrap; font-weight: bold;">{b["line"]}</div>'
     folium.Marker([b['lat'], b['lon']], icon=folium.DivIcon(icon_size=(30, 30), html=icon_html), popup=folium.Popup(popup_html, max_width=200)).add_to(m)
 
-st_folium(m, width=None, height=450, key=f"map_v43", use_container_width=True)
+st_folium(m, width=None, height=450, key="map_v44", use_container_width=True)
 
 # תיבת מרחק
 if display_buses:
