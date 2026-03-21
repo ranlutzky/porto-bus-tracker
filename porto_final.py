@@ -39,26 +39,24 @@ st.markdown("""
         font-size: 13px !important;
         font-weight: bold !important;
         border-radius: 4px !important;
-        padding: 0px !important;
-        display: block !important;
     }
     
-    div.stButton > button:hover { border-color: #00ccff !important; color: #00ccff !important; }
-
-    [data-testid="column"] {
-        padding-left: 1px !important;
-        padding-right: 1px !important;
+    .bus-card {
+        background-color: #262730;
+        border-left: 4px solid #00ccff;
+        padding: 12px;
+        margin-bottom: 10px;
+        border-radius: 4px;
+        color: white;
     }
+    .bus-line-title { font-weight: bold; font-size: 16px; color: #00ccff; margin-bottom: 5px; }
+    .bus-meta { font-size: 14px; color: #ccc; display: flex; gap: 15px; }
+    .eta-text { color: #ffff00; font-weight: bold; }
 
-    .custom-label { color: white !important; font-size: 13px; font-weight: bold; margin-bottom: 5px; }
+    .custom-label { color: white !important; font-size: 13px; font-weight: bold; margin-bottom: 5px; margin-top: 15px; }
     div[data-baseweb="select"] > div { background-color: #333333 !important; border: 1px solid #555 !important; }
     div[data-baseweb="select"] * { color: white !important; }
-
-    [data-testid="stNotification"] { background-color: #262730 !important; border: 1px solid #00ccff !important; }
-    [data-testid="stNotification"] div { color: #ffffff !important; }
-
     .refresh-text { color: #ffffff !important; font-size: 12px; text-align: center; margin-top: 10px; }
-    .refresh-text b { color: #ffff00 !important; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -75,28 +73,28 @@ def get_bus_data():
         return r.json() if r.status_code == 200 else []
     except: return []
 
-# פונקציה חדשה וזהירה לשליפת תחנות
-def get_stops_sample():
-    url = "https://broker.fiware.urbanplatform.portodigital.pt/v2/entities?type=busStop&limit=10"
-    try:
-        r = requests.get(url, verify=False, timeout=5)
-        return r.json() if r.status_code == 200 else []
-    except: return []
-
-# --- ממשק משתמש ---
-st.markdown('<p class="custom-label">SELECT BUS LINE</p>', unsafe_allow_html=True)
+# --- שליפת נתונים ---
 buses_raw = get_bus_data()
 
-active_lines = [str(e.get('name', {}).get('value', '')).split()[1] for e in buses_raw if len(str(e.get('name', {}).get('value', '')).split()) >= 2 and str(e.get('name', {}).get('value', '')).split()[1].isdigit()]
+# עיבוד רשימת קווים
+active_lines = []
+for e in buses_raw:
+    parts = str(e.get('name', {}).get('value', '')).split()
+    if len(parts) >= 2 and parts[1].isdigit():
+        active_lines.append(parts[1])
 unique_lines = sorted(list(set(active_lines)), key=lambda x: int(x))
+
+st.markdown('<p class="custom-label">SELECT BUS LINE</p>', unsafe_allow_html=True)
 target = st.selectbox("Line:", ["Nearby Buses"] + unique_lines, label_visibility="collapsed")
 
+# מיקום משתמש
 loc = get_geolocation()
 if st.session_state.location_mode == 'gps' and loc and 'coords' in loc:
     user_lat, user_lon = loc['coords']['latitude'], loc['coords']['longitude']
 else:
     user_lat, user_lon = st.session_state.get('map_center', (41.1485, -8.6110))
 
+# עיבוד אוטובוסים
 all_buses = []
 for e in buses_raw:
     parts = str(e.get('name', {}).get('value', '')).split()
@@ -105,13 +103,8 @@ for e in buses_raw:
         dist = haversine(user_lat, user_lon, coords[1], coords[0])
         all_buses.append({'line': parts[1], 'lat': coords[1], 'lon': coords[0], 'dist': dist, 'heading': e.get('heading', {}).get('value', 0)})
 
+# סינון אוטובוסים לתצוגה
 display_buses = sorted(all_buses, key=lambda x: x['dist'])[:10] if target == "Nearby Buses" else [b for b in all_buses if b['line'] == target]
-
-if display_buses:
-    closest = min(display_buses, key=lambda x: x['dist'])
-    st.markdown(f'<div style="background-color: #262730; border: 1px solid #00ccff; padding: 10px; border-radius: 5px; text-align: center; color: white; margin-bottom: 10px;">'
-                f'🚍 Closest: <span style="color: #ffff00; font-weight: bold;">Line {closest["line"]}</span> is '
-                f'<span style="color: #ffff00; font-weight: bold;">{closest["dist"]:.2f} km</span> away</div>', unsafe_allow_html=True)
 
 # מפה
 m = folium.Map(location=[user_lat, user_lon], zoom_start=16)
@@ -120,33 +113,55 @@ folium.Marker([user_lat, user_lon], icon=folium.Icon(color='red', icon='user', p
 for b in display_buses:
     line_number = str(b['line']).strip()
     stcp_url = f"https://stcp.pt/en/line?line={line_number}"
+    
+    # החזרת הפופ-אפ למפה
+    popup_content = f"""
+    <div style="font-family: sans-serif; font-size: 14px; text-align: center; min-width: 150px;">
+        <b style="font-size: 16px;">Line {line_number}</b><br>
+        <hr style="margin: 8px 0; border: 0; border-top: 1px solid #eee;">
+        <a href="{stcp_url}" target="_blank" style="color: #00ccff; text-decoration: underline; font-weight: bold; display: block; padding: 5px;">
+            View Full Route
+        </a>
+    </div>
+    """
+    
     icon_html = f'<div style="background-color: #00ccff; width: 30px; height: 30px; border-radius: 50%; border: 2px solid white; display: flex; align-items: center; justify-content: center; color: black; transform: rotate({b["heading"]}deg); font-weight: bold;">↑</div><div style="background: rgba(0,0,0,0.8); padding: 1px 3px; border-radius: 3px; font-size: 10px; position: absolute; top: 32px; color: white; white-space: nowrap;">{b["line"]}</div>'
-    folium.Marker(location=[b['lat'], b['lon']], icon=folium.DivIcon(icon_size=(30, 30), icon_anchor=(15, 15), html=icon_html)).add_to(m)
+    
+    folium.Marker(
+        location=[b['lat'], b['lon']], 
+        icon=folium.DivIcon(icon_size=(30, 30), icon_anchor=(15, 15), html=icon_html),
+        popup=folium.Popup(popup_content, max_width=250)
+    ).add_to(m)
 
-st_folium(m, width=None, height=450, key=f"map_v23_{target}_{st.session_state.location_mode}", use_container_width=True)
+st_folium(m, width=None, height=400, key=f"map_v26_{target}", use_container_width=True)
 
 # כפתורי מיקום
-col1, col2 = st.columns(2)
-with col1:
-    if st.button("📍 MY LOCATION", use_container_width=True):
-        st.session_state.location_mode = 'gps'; st.rerun()
-with col2:
-    if st.button("🏠 HOME (PORTO)", use_container_width=True):
-        st.session_state.location_mode = 'manual'
-        st.session_state.map_center = (41.1485, -8.6110); st.rerun()
+c1, c2 = st.columns(2)
+with c1:
+    if st.button("📍 MY LOCATION"): st.session_state.location_mode = 'gps'; st.rerun()
+with c2:
+    if st.button("🏠 HOME (PORTO)"): st.session_state.location_mode = 'manual'; st.session_state.map_center = (41.1485, -8.6110); st.rerun()
 
-# --- בדיקה של התחנות (בצורה זהירה) ---
-st.write("---")
-st.write("🔍 Testing Stops API...")
-stops_sample = get_stops_sample()
-if stops_sample:
-    st.success(f"Found {len(stops_sample)} stops! The API is working.")
-    for s in stops_sample[:3]:
-        st.text(f"📍 {s.get('name', {}).get('value', 'No Name')}")
+# רשימת אוטובוסים קרובים
+st.markdown('<p class="custom-label">INCOMING BUSES</p>', unsafe_allow_html=True)
+upcoming = sorted(display_buses, key=lambda x: x['dist'])[:4]
+
+if not upcoming:
+    st.write("No buses found nearby.")
 else:
-    st.error("Could not fetch stops. API might be slow or blocked.")
+    for bus in upcoming:
+        eta_minutes = int(bus['dist'] * 5) + 1 # עדכון קל לחישוב הזמן (5 דקות לקילומטר)
+        st.markdown(f"""
+            <div class="bus-card">
+                <div class="bus-line-title">🚍 Line {bus['line']}</div>
+                <div class="bus-meta">
+                    <span>📍 <b>{int(bus['dist']*1000)}m</b> away</span>
+                    <span>🕒 Arrival: <span class="eta-text">~{eta_minutes} min</span></span>
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
 
-# רענון (45 שניות)
+# רענון
 t_place = st.empty()
 for i in range(45, 0, -1):
     t_place.markdown(f'<p class="refresh-text">Refreshing in <b>{i}s</b>...</p>', unsafe_allow_html=True)
