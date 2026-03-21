@@ -9,7 +9,7 @@ from streamlit_js_eval import get_geolocation
 # 1. הגדרות עמוד
 st.set_page_config(page_title="Porto Bus Tracker", layout="wide")
 
-# 2. אתחול משתני מערכת (v23)
+# 2. אתחול משתני מערכת
 if 'map_center' not in st.session_state:
     st.session_state.map_center = (41.1485, -8.6110)
 if 'location_mode' not in st.session_state:
@@ -36,19 +36,23 @@ def haversine(lat1, lon1, lat2, lon2):
     a = sin(dLat/2)**2 + cos(radians(lat1))*cos(radians(lat2))*sin(dLon/2)**2
     return R * 2 * asin(sqrt(a))
 
-# פונקציית שליפה בסיסית ללא פילטרים גיאוגרפיים (שלא יחסם)
-def get_porto_entities(e_type, limit=500):
+# פונקציית שליפה עם טיפול בשגיאות כדי שלא יפיל את כל הדף
+def safe_get(e_type, limit=300):
     url = f"https://broker.fiware.urbanplatform.portodigital.pt/v2/entities?type={e_type}&limit={limit}"
     try:
-        r = requests.get(url, verify=False, timeout=10)
-        return r.json() if r.status_code == 200 else []
-    except: return []
+        r = requests.get(url, verify=False, timeout=5) # טיימאאוט קצר כדי לא לתקוע את הממשק
+        if r.status_code == 200:
+            return r.json()
+    except:
+        pass
+    return []
 
-# --- שליפת נתונים ---
-buses_raw = get_porto_entities("bus", 500)
-stops_raw = get_porto_entities("busStop", 400) # הגבלה ל-400 תחנות כדי לשמור על מהירות
+# --- שליפת נתונים בנפרד ---
+buses_raw = safe_get("bus", 500)
+# אם שליפת התחנות נכשלת, היא פשוט תחזיר רשימה ריקה והאוטובוסים עדיין יופיעו
+stops_raw = safe_get("busStop", 200) 
 
-# מיקום משתמש
+# קביעת מיקום
 loc = get_geolocation()
 if st.session_state.location_mode == 'gps' and loc and 'coords' in loc:
     user_lat, user_lon = loc['coords']['latitude'], loc['coords']['longitude']
@@ -64,41 +68,41 @@ for e in buses_raw:
         dist = haversine(user_lat, user_lon, coords[1], coords[0])
         all_buses.append({'line': parts[1], 'lat': coords[1], 'lon': coords[0], 'dist': dist, 'heading': e.get('heading', {}).get('value', 0)})
 
-# --- ממשק משתמש ---
+# ממשק בחירה
 st.markdown('<p class="custom-label">SELECT BUS LINE</p>', unsafe_allow_html=True)
 active_lines = sorted(list(set([b['line'] for b in all_buses if b['line'].isdigit()])), key=int)
 target = st.selectbox("Line:", ["Nearby Buses"] + active_lines, label_visibility="collapsed")
 
-display_buses = sorted(all_buses, key=lambda x: x['dist'])[:12] if target == "Nearby Buses" else [b for b in all_buses if b['line'] == target]
+display_buses = sorted(all_buses, key=lambda x: x['dist'])[:10] if target == "Nearby Buses" else [b for b in all_buses if b['line'] == target]
 
 # מפה
 m = folium.Map(location=[user_lat, user_lon], zoom_start=16)
 folium.Marker([user_lat, user_lon], icon=folium.Icon(color='red', icon='user', prefix='fa')).add_to(m)
 
-# 1. הצגת תחנות (סינון מקומי בלבד)
-for s in stops_raw:
-    s_coords = s.get('location', {}).get('value', {}).get('coordinates', [0,0])
-    # חישוב מרחק מקומי
-    s_dist = haversine(user_lat, user_lon, s_coords[1], s_coords[0])
-    if s_dist <= 0.4: # מציג רק מה שברדיוס 400 מטר ממך
-        s_name = s.get('name', {}).get('value', 'Bus Stop').replace("Paragem: ", "")
-        folium.CircleMarker(
-            location=[s_coords[1], s_coords[0]],
-            radius=5, color='#888', fill=True, fill_color='#00ccff', fill_opacity=0.8,
-            popup=f"🚏 {s_name}"
-        ).add_to(m)
+# הצגת תחנות (רק אם השליפה הצליחה והן קרובות)
+if stops_raw:
+    for s in stops_raw:
+        s_coords = s.get('location', {}).get('value', {}).get('coordinates', [0,0])
+        s_dist = haversine(user_lat, user_lon, s_coords[1], s_coords[0])
+        if s_dist <= 0.35: # רדיוס 350 מטר
+            s_name = s.get('name', {}).get('value', 'Bus Stop').replace("Paragem: ", "")
+            folium.CircleMarker(
+                location=[s_coords[1], s_coords[0]],
+                radius=4, color='#555', fill=True, fill_color='#00ccff', fill_opacity=0.6,
+                popup=f"🚏 {s_name}"
+            ).add_to(m)
 
-# 2. הצגת אוטובוסים
+# הצגת אוטובוסים
 for b in display_buses:
     icon_html = f'<div style="background-color: #00ccff; width: 30px; height: 30px; border-radius: 50%; border: 2px solid white; display: flex; align-items: center; justify-content: center; color: black; transform: rotate({b["heading"]}deg); font-weight: bold;">↑</div><div style="background: rgba(0,0,0,0.8); padding: 1px 3px; border-radius: 3px; font-size: 10px; position: absolute; top: 32px; color: white; white-space: nowrap;">{b["line"]}</div>'
     folium.Marker([b['lat'], b['lon']], icon=folium.DivIcon(icon_size=(30, 30), html=icon_html)).add_to(m)
 
-st_folium(m, width=None, height=450, key=f"v36_map", use_container_width=True)
+st_folium(m, width=None, height=450, key=f"v37_map", use_container_width=True)
 
 # כפתורים
 c1, c2 = st.columns(2)
 with c1:
-    if st.button("📍 MY LOCATION"): st.session_state.location_mode = 'gps'; st.rerun()
+    if st.button("📍 GPS"): st.session_state.location_mode = 'gps'; st.rerun()
 with c2:
     if st.button("🏠 HOME"): st.session_state.location_mode = 'manual'; st.session_state.map_center = (41.1485, -8.6110); st.rerun()
 
