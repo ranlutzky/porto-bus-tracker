@@ -9,13 +9,13 @@ from streamlit_js_eval import get_geolocation
 # הגדרות עמוד
 st.set_page_config(page_title="Porto Bus Tracker", layout="wide")
 
-# אתחול מצבי מיקום
+# אתחול מצבי מיקום ב-Session State
 if 'map_center' not in st.session_state:
     st.session_state.map_center = (41.1485, -8.6110)
 if 'location_mode' not in st.session_state:
     st.session_state.location_mode = 'gps'
 
-# CSS: כפתורים זה לצד זה ברוחב מלא
+# CSS: שליטה מלאה ברוחב, צבעים ויישור
 st.markdown("""
     <style>
     .stApp { background-color: #1e1e1e !important; }
@@ -38,7 +38,7 @@ st.markdown("""
         text-transform: uppercase;
     }
 
-    /* תיבת בחירה */
+    /* תיבת בחירה - רוחב מלא */
     div[data-baseweb="select"] > div { 
         background-color: #333333 !important; 
         border: 1px solid #555 !important;
@@ -46,9 +46,10 @@ st.markdown("""
     }
     div[data-baseweb="select"] * { color: white !important; }
 
-    /* כפתורים מלבניים - תופסים את כל רוחב העמודה שלהם */
+    /* כפתורים - הכרחת רוחב 100% וביטול שוליים */
     .stButton>button {
         width: 100% !important;
+        display: block !important;
         background-color: #333333 !important;
         color: #ffffff !important;
         border: 1px solid #555 !important;
@@ -56,9 +57,23 @@ st.markdown("""
         font-size: 13px !important;
         font-weight: bold !important;
         border-radius: 8px !important;
-        margin-top: 0px !important;
+        margin-top: 5px !important;
     }
     .stButton>button:hover { border-color: #00ccff !important; color: #00ccff !important; }
+
+    /* ביטול ה-Padding של העמודות כדי שהכפתורים ייצמדו לקצוות המפה */
+    [data-testid="column"] {
+        padding-left: 0px !important;
+        padding-right: 0px !important;
+    }
+
+    /* תיבת המרחק - טקסט לבן וצהוב */
+    [data-testid="stNotification"] {
+        background-color: #262730 !important;
+        border: 1px solid #00ccff !important;
+    }
+    [data-testid="stNotification"] div { color: #ffffff !important; }
+    .stInfo b, .stInfo strong { color: #ffff00 !important; }
 
     /* טיימר רענון */
     .refresh-text {
@@ -77,7 +92,7 @@ def haversine(lat1, lon1, lat2, lon2):
     a = sin(dLat/2)**2 + cos(radians(lat1))*cos(radians(lat2))*sin(dLon/2)**2
     return R * 2 * asin(sqrt(a))
 
-# --- חיפוש ---
+# --- חלק 1: חיפוש (רוחב מלא) ---
 st.markdown('<p class="custom-label">SELECT BUS LINE</p>', unsafe_allow_html=True)
 
 def get_bus_data():
@@ -99,7 +114,7 @@ if st.session_state.location_mode == 'gps' and loc and 'coords' in loc:
 else:
     user_lat, user_lon = st.session_state.map_center
 
-# הודעת מרחק
+# חלק 2: הודעת מרחק
 all_buses = []
 for e in buses_raw:
     parts = str(e.get('name', {}).get('value', '')).split()
@@ -110,42 +125,4 @@ for e in buses_raw:
 
 display_buses = sorted(all_buses, key=lambda x: x['dist'])[:10] if target == "Nearby Buses" else [b for b in all_buses if b['line'] == target]
 
-if display_buses:
-    closest = min(display_buses, key=lambda x: x['dist'])
-    st.markdown(f"""
-        <div style="background-color: #262730; border: 1px solid #00ccff; padding: 10px; border-radius: 5px; text-align: center; color: white; margin-bottom: 10px;">
-            🚍 Closest: <span style="color: #ffff00; font-weight: bold;">Line {closest['line']}</span> 
-            is <span style="color: #ffff00; font-weight: bold;">{closest['dist']:.2f} km</span> away
-        </div>
-    """, unsafe_allow_html=True)
-
-# --- מפה ---
-m = folium.Map(location=[user_lat, user_lon], zoom_start=16)
-folium.Marker([user_lat, user_lon], icon=folium.Icon(color='red', icon='user', prefix='fa')).add_to(m)
-
-for b in display_buses:
-    icon_html = f'<div style="background-color: #00ccff; width: 30px; height: 30px; border-radius: 50%; border: 2px solid white; display: flex; align-items: center; justify-content: center; color: black; transform: rotate({b["heading"]}deg); font-weight: bold;">↑</div><div style="background: rgba(0,0,0,0.8); padding: 1px 3px; border-radius: 3px; font-size: 10px; position: absolute; top: 32px; color: white; white-space: nowrap;">{b["line"]}</div>'
-    folium.Marker(location=[b['lat'], b['lon']], icon=folium.DivIcon(icon_size=(30, 30), icon_anchor=(15, 15), html=icon_html)).add_to(m)
-
-st_folium(m, width=None, height=450, key=f"map_v16_{target}_{st.session_state.location_mode}", use_container_width=True)
-
-# --- כפתורי מיקום: שניים בשורה אחת, רוחב מלא ---
-col_gps, col_home = st.columns(2, gap="small")
-
-with col_gps:
-    if st.button("📍 MY LOCATION"):
-        st.session_state.location_mode = 'gps'
-        st.rerun()
-
-with col_home:
-    if st.button("🏠 HOME (PORTO)"):
-        st.session_state.location_mode = 'manual'
-        st.session_state.map_center = (41.1485, -8.6110)
-        st.rerun()
-
-# רענון
-t_place = st.empty()
-for i in range(30, 0, -1):
-    t_place.markdown(f'<p class="refresh-text">Refreshing in <b>{i}s</b>...</p>', unsafe_allow_html=True)
-    time.sleep(1)
-st.rerun()
+if display
