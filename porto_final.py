@@ -28,7 +28,7 @@ def get_all_stops():
             return []
     return []
 
-# 2. CSS מעודכן (v55) - ביטול החשכה ועיצוב
+# 2. CSS מעודכן (v56) - ביטול החשכה ועיצוב
 st.markdown("""
     <style>
     /* העלמת שכבת ההחשכה (Running Overlay) */
@@ -73,7 +73,7 @@ st.markdown("""
     .arrival-row { font-size: 14px; color: #ffff00; font-weight: bold; display: flex; gap: 8px; flex-wrap: wrap; }
     .bus-item { display: flex; align-items: center; gap: 4px; background: rgba(255,255,0,0.1); padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(255,255,0,0.2); }
     
-    .refresh-text { color: #888; font-size: 11px; text-align: center; margin-top: 10px; }
+    .refresh-text { color: #888; font-size: 11px; text-align: center; margin-bottom: 15px; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -132,7 +132,11 @@ for stop in STATIC_STOPS:
                 arrivals.append({'line': bus['line'], 'eta': eta})
         nearby_stops_data.append({'name': stop['name'], 'dist': int(dist * 1000), 'arrivals': sorted(arrivals, key=lambda x: x['eta'])[:3]})
 
+# הצגת מפה
 st_folium(m, width=None, height=400, key="map_v54", use_container_width=True)
+
+# --- כאן ממוקם שעון הרפרש החדש (מתחת למפה) ---
+refresh_placeholder = st.empty()
 
 if display_buses:
     closest = min(display_buses, key=lambda x: x['dist'])
@@ -151,9 +155,8 @@ for s in sorted(nearby_stops_data, key=lambda x: x['dist']):
         </div>
     """, unsafe_allow_html=True)
 
-# רענון כל 20 שניות
-t = st.empty()
+# לוגיקת רענון (כל 20 שניות) המקושרת ל-placeholder שמתחת למפה
 for i in range(20, 0, -1):
-    t.markdown(f'<p class="refresh-text">Next update in {i}s...</p>', unsafe_allow_html=True)
+    refresh_placeholder.markdown(f'<p class="refresh-text">Next update in {i}s...</p>', unsafe_allow_html=True)
     time.sleep(1)
 st.rerun()
