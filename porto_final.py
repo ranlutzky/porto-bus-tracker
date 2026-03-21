@@ -6,96 +6,43 @@ from streamlit_folium import st_folium
 from math import radians, cos, sin, asin, sqrt
 from streamlit_js_eval import get_geolocation
 
-# --- מאגר תחנות מורחב (מסודר בפונקציה כדי לשמור על סדר) ---
-def get_all_stops():
-    return [
-        # CENTRO / ALIADOS
-        {"name": "Aliados", "lat": 41.1485, "lon": -8.6110},
-        {"name": "Pr. Liberdade", "lat": 41.1478, "lon": -8.6112},
-        {"name": "Av. Aliados", "lat": 41.1492, "lon": -8.6108},
-        {"name": "S. Bento Station", "lat": 41.1456, "lon": -8.6103},
-        {"name": "Sá da Bandeira", "lat": 41.1472, "lon": -8.6085},
-        {"name": "Batalha", "lat": 41.1438, "lon": -8.6065},
-        {"name": "Ribeira", "lat": 41.1405, "lon": -8.6115},
-        
-        # REPUBLICA / TRINDADE
-        {"name": "Praça da República", "lat": 41.1554, "lon": -8.6133},
-        {"name": "Trindade", "lat": 41.1523, "lon": -8.6125},
-        {"name": "Gonçalo Cristóvão", "lat": 41.1541, "lon": -8.6105},
-        {"name": "Faria Guimarães", "lat": 41.1578, "lon": -8.6085},
-        {"name": "Antero de Quental", "lat": 41.1595, "lon": -8.6130},
-        {"name": "Lapa", "lat": 41.1560, "lon": -8.6160},
-        
-        # BOAVISTA / CASA DA MUSICA
-        {"name": "Casa da Música", "lat": 41.1587, "lon": -8.6307},
-        {"name": "Rotunda Boavista", "lat": 41.1579, "lon": -8.6291},
-        {"name": "Bom Sucesso", "lat": 41.1555, "lon": -8.6285},
-        {"name": "Pr. Galiza", "lat": 41.1508, "lon": -8.6258},
-        {"name": "Guerra Junqueiro", "lat": 41.1598, "lon": -8.6360},
-        {"name": "António Cardoso", "lat": 41.1565, "lon": -8.6385},
-        
-        # CEDOFEITA / CORDOARIA
-        {"name": "Cordoaria", "lat": 41.1465, "lon": -8.6148},
-        {"name": "Carmo", "lat": 41.1472, "lon": -8.6163},
-        {"name": "Cedofeita", "lat": 41.1525, "lon": -8.6180},
-        {"name": "Maternidade", "lat": 41.1502, "lon": -8.6210},
-        {"name": "Torre dos Clérigos", "lat": 41.1458, "lon": -8.6140},
-        
-        # MARQUES / ANTAS
-        {"name": "Marquês", "lat": 41.1602, "lon": -8.6061},
-        {"name": "Antas (Estádio)", "lat": 41.1615, "lon": -8.5828},
-        {"name": "Combatentes", "lat": 41.1635, "lon": -8.5925},
-        {"name": "Costa Cabral", "lat": 41.1650, "lon": -8.5950},
-        {"name": "Campanhã", "lat": 41.1492, "lon": -8.5855},
-        
-        # ASPRELA (UNIVERSITY AREA)
-        {"name": "Hospital S. João", "lat": 41.1804, "lon": -8.6015},
-        {"name": "Polo Universitário", "lat": 41.1745, "lon": -8.6048},
-        {"name": "FEUP", "lat": 41.1780, "lon": -8.5980},
-        {"name": "IPO", "lat": 41.1825, "lon": -8.6045},
-        
-        # FOZ
-        {"name": "Foz (Castelo)", "lat": 41.1478, "lon": -8.6710},
-        {"name": "Fluvial", "lat": 41.1462, "lon": -8.6535},
-        {"name": "Passeio Alegre", "lat": 41.1475, "lon": -8.6750},
-        {"name": "Senhora da Luz", "lat": 41.1535, "lon": -8.6780},
-        
-        # GAIA (NORTH SIDE)
-        {"name": "Jardim do Morro", "lat": 41.1385, "lon": -8.6095},
-        {"name": "General Torres", "lat": 41.1345, "lon": -8.6075}
-    ]
-
 # 1. הגדרות עמוד
 st.set_page_config(page_title="Porto Bus Tracker", layout="wide")
 
-# 2. אתחול משתני מערכת
-if 'map_center' not in st.session_state:
-    st.session_state.map_center = (41.1485, -8.6110)
-if 'location_mode' not in st.session_state:
-    st.session_state.location_mode = 'gps'
-
-# 3. CSS (v23 היציב)
-st.markdown("""
-    <style>
-    .stApp { background-color: #1e1e1e !important; }
-    header { visibility: hidden; height: 0px !important; }
-    #MainMenu, footer, .stDeployButton, [data-testid="stStatusWidget"] { visibility: hidden; display: none !important; }
-    .block-container { padding-top: 0.5rem !important; padding-left: 0.5rem !important; padding-right: 0.5rem !important; max-width: 550px !important; margin: auto !important; }
-    div.stButton > button { width: 100% !important; background-color: #333333 !important; color: #ffffff !important; border: 1px solid #555 !important; height: 40px !important; font-size: 13px !important; font-weight: bold !important; border-radius: 4px; }
-    .custom-label { color: white !important; font-size: 13px; font-weight: bold; margin-bottom: 5px; }
-    div[data-baseweb="select"] > div { background-color: #333333 !important; border: 1px solid #555 !important; }
-    div[data-baseweb="select"] * { color: white !important; }
-    .refresh-text { color: #ffffff !important; font-size: 12px; text-align: center; margin-top: 10px; }
-    .distance-box { background-color: #262730; border: 1px solid #00ccff; padding: 10px; border-radius: 5px; text-align: center; color: white; margin-top: 10px; margin-bottom: 10px; font-size: 14px; }
-    .distance-box b { color: #ffff00; }
-    </style>
-    """, unsafe_allow_html=True)
-
+# פונקציית מרחק
 def haversine(lat1, lon1, lat2, lon2):
     R = 6371.0 
     dLat, dLon = radians(lat2 - lat1), radians(lon2 - lon1)
     a = sin(dLat/2)**2 + cos(radians(lat1))*cos(radians(lat2))*sin(dLon/2)**2
     return R * 2 * asin(sqrt(a))
+
+# --- מאגר תחנות (v48 מורחב) ---
+def get_all_stops():
+    return [
+        {"name": "Aliados", "lat": 41.1485, "lon": -8.6110},
+        {"name": "Pr. Liberdade", "lat": 41.1478, "lon": -8.6112},
+        {"name": "Praça da República", "lat": 41.1554, "lon": -8.6133},
+        {"name": "Trindade", "lat": 41.1523, "lon": -8.6125},
+        {"name": "S. Bento Station", "lat": 41.1456, "lon": -8.6103},
+        {"name": "Casa da Música", "lat": 41.1587, "lon": -8.6307},
+        {"name": "Cordoaria", "lat": 41.1465, "lon": -8.6148},
+        {"name": "Hospital S. João", "lat": 41.1804, "lon": -8.6015},
+        {"name": "Marquês", "lat": 41.1602, "lon": -8.6061},
+        {"name": "Rotunda Boavista", "lat": 41.1579, "lon": -8.6291}
+    ]
+
+# 2. CSS משופר לרשימת התחנות
+st.markdown("""
+    <style>
+    .stApp { background-color: #1e1e1e !important; }
+    .block-container { padding: 0.5rem !important; max-width: 550px !important; margin: auto !important; }
+    .stop-card { background-color: #262730; border-left: 5px solid #9933ff; padding: 12px; border-radius: 5px; margin-bottom: 10px; color: white; }
+    .stop-title { font-size: 16px; font-weight: bold; margin-bottom: 4px; color: #ffffff; }
+    .stop-info { font-size: 13px; color: #cccccc; }
+    .bus-arrival { color: #ffff00; font-weight: bold; }
+    .refresh-text { color: #888; font-size: 11px; text-align: center; }
+    </style>
+    """, unsafe_allow_html=True)
 
 def get_bus_data():
     url = "https://broker.fiware.urbanplatform.portodigital.pt/v2/entities?q=vehicleType==bus&limit=1000"
@@ -104,71 +51,72 @@ def get_bus_data():
         return r.json() if r.status_code == 200 else []
     except: return []
 
-# --- לוגיקה ---
-STATIC_STOPS = get_all_stops()
-st.markdown('<p class="custom-label">SELECT BUS LINE</p>', unsafe_allow_html=True)
+# --- לוגיקה מרכזית ---
 buses_raw = get_bus_data()
-
-active_lines = [str(e.get('name', {}).get('value', '')).split()[1] for e in buses_raw if len(str(e.get('name', {}).get('value', '')).split()) >= 2 and str(e.get('name', {}).get('value', '')).split()[1].isdigit()]
-unique_lines = sorted(list(set(active_lines)), key=lambda x: int(x))
-target = st.selectbox("Line:", ["Nearby Buses"] + unique_lines, label_visibility="collapsed")
+STATIC_STOPS = get_all_stops()
 
 loc = get_geolocation()
-if st.session_state.location_mode == 'gps' and loc and 'coords' in loc:
-    u_lat, u_lon = loc['coords']['latitude'], loc['coords']['longitude']
-else:
-    u_lat, u_lon = st.session_state.map_center
+u_lat, u_lon = (loc['coords']['latitude'], loc['coords']['longitude']) if (loc and 'coords' in loc and st.session_state.get('location_mode') == 'gps') else st.session_state.get('map_center', (41.1485, -8.6110))
 
-# --- מפה ---
-m = folium.Map(location=[u_lat, u_lon], zoom_start=17)
-folium.Marker([u_lat, u_lon], icon=folium.Icon(color='red', icon='user', prefix='fa')).add_to(m)
-
-# הצגת תחנות (סגול, רדיוס 300 מטר)
-for stop in STATIC_STOPS:
-    if haversine(u_lat, u_lon, stop['lat'], stop['lon']) <= 0.3:
-        folium.CircleMarker(
-            location=[stop['lat'], stop['lon']],
-            radius=9, color='#ffffff', weight=2, fill=True, fill_color='#9933ff', fill_opacity=0.9,
-            tooltip=f"🚏 {stop['name']}",
-            popup=f"Stop: {stop['name']}"
-        ).add_to(m)
-
-# הצגת אוטובוסים
-all_buses = []
+# עיבוד נתוני אוטובוסים
+all_active_buses = []
 for e in buses_raw:
     parts = str(e.get('name', {}).get('value', '')).split()
     if len(parts) >= 2:
         coords = e.get('location', {}).get('value', {}).get('coordinates', [0,0])
-        all_buses.append({'line': parts[1], 'lat': coords[1], 'lon': coords[0], 'dist': haversine(u_lat, u_lon, coords[1], coords[0]), 'heading': e.get('heading', {}).get('value', 0)})
+        all_active_buses.append({'line': parts[1], 'lat': coords[1], 'lon': coords[0]})
 
-display_buses = sorted(all_buses, key=lambda x: x['dist'])[:10] if target == "Nearby Buses" else [b for b in all_buses if b['line'] == target]
+# --- תצוגת מפה (v48 המוכר) ---
+m = folium.Map(location=[u_lat, u_lon], zoom_start=17)
+folium.Marker([u_lat, u_lon], icon=folium.Icon(color='red', icon='user', prefix='fa')).add_to(m)
 
-for b in display_buses:
-    stcp_url = f"https://stcp.pt/en/line?line={b['line']}"
-    popup_html = f'<div style="text-align:center; min-width:120px;"><b>Line {b["line"]}</b><br><a href="{stcp_url}" target="_blank" style="color:#00ccff;">Route</a></div>'
-    icon_html = f'<div style="background-color: #00ccff; width: 30px; height: 30px; border-radius: 50%; border: 2px solid white; display: flex; align-items: center; justify-content: center; color: black; transform: rotate({b["heading"]}deg); font-weight: bold;">↑</div><div style="background: rgba(0,0,0,0.8); padding: 1px 3px; border-radius: 3px; font-size: 10px; position: absolute; top: 32px; color: white; white-space: nowrap; font-weight: bold;">{b["line"]}</div>'
-    folium.Marker([b['lat'], b['lon']], icon=folium.DivIcon(icon_size=(30, 30), html=icon_html), popup=folium.Popup(popup_html, max_width=200)).add_to(m)
+nearby_stops_data = []
+for stop in STATIC_STOPS:
+    dist = haversine(u_lat, u_lon, stop['lat'], stop['lon'])
+    if dist <= 0.4: # מציג תחנות ברדיוס 400 מטר
+        folium.CircleMarker(
+            location=[stop['lat'], stop['lon']], radius=9, color='#ffffff', weight=2, 
+            fill=True, fill_color='#9933ff', fill_opacity=0.9, tooltip=stop['name']
+        ).add_to(m)
+        
+        # חישוב אוטובוסים קרובים לתחנה הספציפית הזו
+        arrivals = []
+        for bus in all_active_buses:
+            b_dist = haversine(bus['lat'], bus['lon'], stop['lat'], stop['lon'])
+            if b_dist < 2.0: # מחפש אוטובוסים ברדיוס 2 ק"מ מהתחנה
+                eta = int((b_dist / 20) * 60) + 1 # חישוב דקות לפי 20 קמ"ש
+                arrivals.append(f"Line {bus['line']} ({eta} min)")
+        
+        nearby_stops_data.append({
+            'name': stop['name'],
+            'dist': int(dist * 1000),
+            'arrivals': sorted(arrivals, key=lambda x: int(x.split('(')[1].split()[0]))[:2] # 2 הכי קרובים
+        })
 
-st_folium(m, width=None, height=450, key="map_v48", use_container_width=True)
+st_folium(m, width=None, height=400, key="map_v49", use_container_width=True)
 
-# תיבת מרחק
-if display_buses:
-    closest = min(display_buses, key=lambda x: x['dist'])
-    st.markdown(f'<div class="distance-box">🚍 Closest: <b>Line {closest["line"]}</b> is <b>{closest["dist"]:.2f} km</b> away</div>', unsafe_allow_html=True)
+# --- רשימת התחנות מתחת למפה ---
+st.markdown("### 🚏 Nearby Stops")
+if not nearby_stops_data:
+    st.write("No stops found within 400m.")
+else:
+    for s in sorted(nearby_stops_data, key=lambda x: x['dist']):
+        bus_text = " | ".join(s['arrivals']) if s['arrivals'] else "No incoming buses"
+        st.markdown(f"""
+            <div class="stop-card">
+                <div class="stop-title">{s['name']}</div>
+                <div class="stop-info">
+                    📏 {s['dist']}m away • <span class="bus-arrival">Next: {bus_text}</span>
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
 
 # כפתורים
 c1, c2 = st.columns(2)
 with c1:
-    if st.button("📍 MY LOCATION"): st.session_state.location_mode = 'gps'; st.rerun()
+    if st.button("📍 GPS"): st.session_state.location_mode = 'gps'; st.rerun()
 with c2:
-    if st.button("🏠 CENTRO (PORTO)"):
-        st.session_state.location_mode = 'manual'
-        st.session_state.map_center = (41.1485, -8.6110)
-        st.rerun()
+    if st.button("🏠 CENTRO"): st.session_state.location_mode = 'manual'; st.session_state.map_center = (41.1485, -8.6110); st.rerun()
 
-# רענון
-t = st.empty()
-for i in range(45, 0, -1):
-    t.markdown(f'<p class="refresh-text">Refreshing in {i}s...</p>', unsafe_allow_html=True)
-    time.sleep(1)
+time.sleep(1) # מניעת רענון מהיר מדי
 st.rerun()
