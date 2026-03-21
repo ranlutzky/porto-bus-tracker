@@ -28,12 +28,20 @@ def get_all_stops():
             return []
     return []
 
-# 2. CSS מעודכן (v54) - Hover ועיצוב כותרת
+# 2. CSS מעודכן (v55) - ביטול החשכה ועיצוב
 st.markdown("""
     <style>
+    /* העלמת שכבת ההחשכה (Running Overlay) */
+    [data-testid="stSidebarUserContent"] { opacity: 1 !important; }
+    .stApp > div:first-child > div:first-child { background-color: transparent !important; }
+    [data-testid="stStatusWidget"] { display: none !important; }
+    
+    /* מניעת הבהוב/החשכה בזמן עדכון */
+    div[data-testid="stVerticalBlock"] > div { opacity: 1 !important; }
+
     .stApp { background-color: #1e1e1e !important; }
     header { visibility: hidden; height: 0px !important; }
-    #MainMenu, footer, .stDeployButton, [data-testid="stStatusWidget"] { visibility: hidden; display: none !important; }
+    #MainMenu, footer, .stDeployButton { visibility: hidden; display: none !important; }
     .block-container { padding-top: 0.5rem !important; padding-left: 0.5rem !important; padding-right: 0.5rem !important; max-width: 550px !important; margin: auto !important; }
     
     div.stButton > button { width: 100% !important; background-color: #333333 !important; color: #ffffff !important; border: 1px solid #555 !important; height: 40px !important; font-size: 13px !important; font-weight: bold !important; border-radius: 4px; }
@@ -80,21 +88,15 @@ def get_bus_data():
 buses_raw = get_bus_data()
 STATIC_STOPS = get_all_stops()
 
-# --- הגדרות מיקום מושבתות (לבדיקות) ---
-# if 'location_mode' not in st.session_state: st.session_state.location_mode = 'gps'
-# if 'map_center' not in st.session_state: st.session_state.map_center = (41.1485, -8.6110)
-
 st.markdown('<p class="custom-label">SELECT BUS LINE</p>', unsafe_allow_html=True)
 active_lines = [str(e.get('name', {}).get('value', '')).split()[1] for e in buses_raw if len(str(e.get('name', {}).get('value', '')).split()) >= 2 and str(e.get('name', {}).get('value', '')).split()[1].isdigit()]
 unique_lines = sorted(list(set(active_lines)), key=lambda x: int(x))
 target = st.selectbox("Line:", ["Nearby Buses"] + unique_lines, label_visibility="collapsed")
 
 loc = get_geolocation()
-# שימוש במיקום ה-GPS בלבד
 if loc:
     u_lat, u_lon = loc['coords']['latitude'], loc['coords']['longitude']
 else:
-    # ברירת מחדל עד לקבלת GPS (מרכז פורטו)
     u_lat, u_lon = 41.1485, -8.6110
 
 # --- מפה ---
@@ -116,7 +118,7 @@ for b in display_buses:
     icon_html = f'<div style="background-color: #00ccff; width: 30px; height: 30px; border-radius: 50%; border: 2px solid white; display: flex; align-items: center; justify-content: center; transform: rotate({b["heading"]}deg); font-weight: bold;">↑</div><div style="background: rgba(0,0,0,0.8); padding: 1px 3px; border-radius: 3px; font-size: 10px; position: absolute; top: 32px; color: white; font-weight: bold;">{b["line"]}</div>'
     folium.Marker([b['lat'], b['lon']], icon=folium.DivIcon(icon_size=(30, 30), html=icon_html), popup=folium.Popup(popup_html, max_width=150)).add_to(m)
 
-# עיבוד תחנות - רדיוס הוגבל ל-300 מטר (0.3 ק"מ)
+# עיבוד תחנות - 300 מטר
 nearby_stops_data = []
 for stop in STATIC_STOPS:
     dist = haversine(u_lat, u_lon, stop['lat'], stop['lon'])
@@ -132,37 +134,26 @@ for stop in STATIC_STOPS:
 
 st_folium(m, width=None, height=400, key="map_v54", use_container_width=True)
 
-# תיבת מרחק
 if display_buses:
     closest = min(display_buses, key=lambda x: x['dist'])
     st.markdown(f'<div class="distance-box">🚍 Closest: <b>Line {closest["line"]}</b> is <b>{closest["dist"]:.2f} km</b> away</div>', unsafe_allow_html=True)
 
-# כפתורים (מושבתים כפי שביקשת)
-# c1, c2 = st.columns(2)
-# with c1:
-#     if st.button("📍 GPS"): st.session_state.location_mode = 'gps'; st.rerun()
-# with c2:
-#     if st.button("🏠 CENTRO"): st.session_state.location_mode = 'manual'; st.session_state.map_center = (41.1485, -8.6110); st.rerun()
-
 # --- רשימת התחנות ---
 for s in sorted(nearby_stops_data, key=lambda x: x['dist']):
     bus_html = "".join([f'<div class="bus-item">🚌 {a["line"]} ({a["eta"]}m 🕒)</div>' for a in s['arrivals']]) if s['arrivals'] else '<span style="color:#888; font-size:12px;">No incoming buses</span>'
-    
     st.markdown(f"""
         <div class="stop-card" title="{s['name']}">
             <div class="stop-header">
                 <span class="stop-title">📍 {s['name']}</span>
                 <span class="stop-dist-inline">({s['dist']}m)</span>
             </div>
-            <div class="arrival-row">
-                {bus_html}
-            </div>
+            <div class="arrival-row">{bus_html}</div>
         </div>
     """, unsafe_allow_html=True)
 
-# רענון
+# רענון כל 20 שניות
 t = st.empty()
-for i in range(45, 0, -1):
+for i in range(20, 0, -1):
     t.markdown(f'<p class="refresh-text">Next update in {i}s...</p>', unsafe_allow_html=True)
     time.sleep(1)
 st.rerun()
