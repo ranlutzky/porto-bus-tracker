@@ -15,7 +15,7 @@ if 'map_center' not in st.session_state:
 if 'location_mode' not in st.session_state:
     st.session_state.location_mode = 'gps'
 
-# CSS מעודכן: טקסט בהיר ב-Info ויישור גבהים
+# CSS מעודכן: טקסט בהיר לכפתורים ולטיימר
 st.markdown("""
     <style>
     .stApp { background-color: #1e1e1e !important; }
@@ -38,16 +38,16 @@ st.markdown("""
         text-transform: uppercase;
     }
 
-    /* כפתורים בגובה 70px ליישור סופי עם התיבה */
+    /* כפתורים עם טקסט לבן בוהק */
     .stButton>button {
         width: 100%;
         background-color: #333333 !important;
-        color: white !important;
+        color: #ffffff !important; /* לבן בוהק */
         border: 1px solid #555 !important;
         height: 70px !important; 
         padding: 0px !important;
-        font-size: 11px !important;
-        font-weight: bold;
+        font-size: 12px !important;
+        font-weight: 800 !important; /* טקסט עבה יותר */
         margin-top: 0px !important;
     }
     .stButton>button:hover { border-color: #00ccff !important; color: #00ccff !important; }
@@ -60,19 +60,25 @@ st.markdown("""
     }
     div[data-baseweb="select"] * { color: white !important; }
 
-    /* עיצוב טקסט המרחק - לבן עם הדגשה בצהוב */
+    /* טקסט המרחק */
     .stInfo { 
         background-color: #262730 !important; 
         border: 1px solid #00ccff !important; 
-        color: #ffffff !important; /* טקסט לבן */
+        color: #ffffff !important; 
         text-align: center;
         padding: 0.4rem !important;
         margin-top: 8px !important;
-        font-size: 15px;
     }
-    .stInfo b, .stInfo strong {
-        color: #ffff00 !important; /* צהוב להדגשת המרחק והקו */
+    .stInfo b, .stInfo strong { color: #ffff00 !important; }
+
+    /* טיימר רענון למטה - טקסט לבן */
+    .refresh-text {
+        color: #ffffff !important;
+        font-size: 14px;
+        text-align: center;
+        margin-top: 10px;
     }
+    .refresh-text b { color: #ffff00 !important; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -96,15 +102,10 @@ with col_gps:
         st.session_state.location_mode = 'gps'
         st.rerun()
 
-# לוגיקת מיקום - תיקון ה-GPS
+# לוגיקת מיקום
 loc = get_geolocation()
-if st.session_state.location_mode == 'gps':
-    if loc and 'coords' in loc:
-        user_lat = loc['coords']['latitude']
-        user_lon = loc['coords']['longitude']
-    else:
-        # בזמן שמחכים ל-GPS, נציג הודעה זמנית או נשתמש במיקום האחרון הידוע
-        user_lat, user_lon = st.session_state.map_center
+if st.session_state.location_mode == 'gps' and loc and 'coords' in loc:
+    user_lat, user_lon = loc['coords']['latitude'], loc['coords']['longitude']
 else:
     user_lat, user_lon = st.session_state.map_center
 
@@ -144,7 +145,6 @@ display_buses = sorted(all_buses, key=lambda x: x['dist'])[:10] if target == "Ne
 
 if display_buses:
     closest = min(display_buses, key=lambda x: x['dist'])
-    # כאן הטקסט יהיה לבן והמספרים בצהוב בזכות ה-CSS
     st.info(f"🚍 Closest: **Line {closest['line']}** is **{closest['dist']:.2f} km** away")
 
 # מפה
@@ -155,11 +155,11 @@ for b in display_buses:
     icon_html = f'<div style="background-color: #00ccff; width: 30px; height: 30px; border-radius: 50%; border: 2px solid white; display: flex; align-items: center; justify-content: center; color: black; transform: rotate({b["heading"]}deg); font-weight: bold;">↑</div><div style="background: rgba(0,0,0,0.8); padding: 1px 3px; border-radius: 3px; font-size: 10px; position: absolute; top: 32px; color: white; white-space: nowrap;">{b["line"]}</div>'
     folium.Marker(location=[b['lat'], b['lon']], icon=folium.DivIcon(icon_size=(30, 30), icon_anchor=(15, 15), html=icon_html)).add_to(m)
 
-st_folium(m, width=None, height=480, key=f"map_v11_{target}_{st.session_state.location_mode}", use_container_width=True)
+st_folium(m, width=None, height=480, key=f"map_v12_{target}_{st.session_state.location_mode}", use_container_width=True)
 
-# רענון
+# רענון עם עיצוב טקסט לבן
 t_place = st.empty()
 for i in range(30, 0, -1):
-    t_place.write(f"Refreshing in {i}s...")
+    t_place.markdown(f'<p class="refresh-text">Refreshing in <b>{i}s</b>...</p>', unsafe_allow_html=True)
     time.sleep(1)
 st.rerun()
