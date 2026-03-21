@@ -87,7 +87,8 @@ loc = get_geolocation()
 if st.session_state.location_mode == 'gps' and loc and 'coords' in loc:
     user_lat, user_lon = loc['coords']['latitude'], loc['coords']['longitude']
 else:
-    user_lat, user_lon = st.session_state.session_state.get('map_center', (41.1485, -8.6110))
+    # תיקון השורה הבעייתית כאן:
+    user_lat, user_lon = st.session_state.get('map_center', (41.1485, -8.6110))
 
 all_buses = []
 for e in buses_raw:
@@ -111,8 +112,6 @@ folium.Marker([user_lat, user_lon], icon=folium.Icon(color='red', icon='user', p
 
 for b in display_buses:
     line_number = str(b['line']).strip()
-    
-    # הלינק המדויק לפי הפורמט ששלחת
     stcp_url = f"https://stcp.pt/en/line?line={line_number}"
     
     popup_content = f"""
