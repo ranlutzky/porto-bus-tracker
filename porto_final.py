@@ -137,7 +137,7 @@ with col2:
 
 # רענון
 t_place = st.empty()
-for i in range(60, 0, -1):
+for i in range(45, 0, -1):
     t_place.markdown(f'<p class="refresh-text">Refreshing in <b>{i}s</b>...</p>', unsafe_allow_html=True)
     time.sleep(1)
 st.rerun()
