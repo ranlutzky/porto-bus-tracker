@@ -140,7 +140,7 @@ with col1:
         st.session_state.location_mode = 'gps'
         st.rerun()
 with col2:
-    if st.button("🏠 HOME (PORTO)", use_container_width=True):
+    if st.button("🏠 CENTRO (PORTO)", use_container_width=True):
         st.session_state.location_mode = 'manual'
         st.session_state.map_center = (41.1485, -8.6110)
         st.rerun()
