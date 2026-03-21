@@ -9,7 +9,10 @@ from streamlit_js_eval import get_geolocation
 # ייבוא מאגר התחנות מהקובץ החיצוני
 try:
     from stops import STATIC_STOPS
+    # שורת בדיקה - תמחק אותה אחרי שזה עובד
+    st.sidebar.write(f"Loaded {len(STATIC_STOPS)} stops from file") 
 except ImportError:
+    st.sidebar.error("Could not find stops.py file!")
     STATIC_STOPS = []
 
 # 1. הגדרות עמוד
