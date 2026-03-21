@@ -87,7 +87,6 @@ loc = get_geolocation()
 if st.session_state.location_mode == 'gps' and loc and 'coords' in loc:
     user_lat, user_lon = loc['coords']['latitude'], loc['coords']['longitude']
 else:
-    # תיקון השורה הבעייתית כאן:
     user_lat, user_lon = st.session_state.get('map_center', (41.1485, -8.6110))
 
 all_buses = []
