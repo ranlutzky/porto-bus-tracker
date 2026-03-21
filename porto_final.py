@@ -7,31 +7,35 @@ from math import radians, cos, sin, asin, sqrt
 import os
 from streamlit_js_eval import get_geolocation
 
-# הגדרות עמוד
-st.set_page_config(page_title="Porto Bus Tracker", layout="centered")
+# הגדרות עמוד - שימוש ב-wide כדי לשלוט ברוחב ידנית
+st.set_page_config(page_title="Porto Bus Tracker", layout="wide")
 
-# CSS: הסרת כותרות, צמצום רווחים והסתרת ממשק ענן
+# CSS: מותאם אישית לסלולר (Mobile First)
 st.markdown(f"""
     <style>
-    /* רקע כהה וטקסט לבן */
+    /* רקע כהה */
     .stApp {{ background-color: #1e1e1e !important; }}
     .stApp, .stApp p, .stApp span, .stApp label, .stApp h1, .stApp h2, .stApp h3 {{ color: #ffffff !important; }}
     
-    /* הסתרת תפריטי Streamlit */
+    /* הסתרת ממשק ענן */
     #MainMenu, footer, .stDeployButton, [data-testid="stStatusWidget"] {{ visibility: hidden; display: none !important; }}
     
-    /* צמצום רווחים אגרסיבי למעלה */
+    /* מרכוז התוכן וצמצום רווחים */
     .block-container {{ 
         padding-top: 1rem !important; 
         padding-bottom: 0rem !important;
-        max-width: 100% !important;
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+        max-width: 600px !important; /* מגביל רווח במחשב, מושלם לסלולר */
+        margin: auto !important;
     }}
     
-    /* עיצוב תיבת הבחירה */
+    /* עיצוב אלמנטים */
     div[data-baseweb="select"] > div {{ background-color: #333333 !important; border: 1px solid #555 !important; }}
+    .stInfo {{ background-color: #262730 !important; border: 1px solid #00ccff !important; color: white !important; text-align: center; }}
     
-    /* עיצוב תיבת המידע של האוטובוס הקרוב */
-    .stInfo {{ background-color: #262730 !important; border: 1px solid #00ccff !important; color: white !important; margin-bottom: 10px !important; }}
+    /* ביטול רווחים מיותרים בין אלמנטים */
+    .stSelectbox {{ margin-bottom: -10px !important; }}
     </style>
     """, unsafe_allow_html=True)
 
@@ -47,8 +51,7 @@ if loc:
     user_lat = loc['coords']['latitude']
     user_lon = loc['coords']['longitude']
 else:
-    # ברירת מחדל Aliados למקרה שה-GPS עוד לא נטען
-    user_lat, user_lon = 41.1485, -8.6110
+    user_lat, user_lon = 41.1485, -8.6110 # Aliados
 
 def get_bus_data():
     url = "https://broker.fiware.urbanplatform.portodigital.pt/v2/entities?q=vehicleType==bus&limit=1000"
@@ -75,28 +78,27 @@ for e in buses_raw:
 
 unique_lines = sorted(list(set(active_lines)), key=lambda x: int(x))
 
-# תיבת בחירה - מופיעה עכשיו הכי למעלה
+# בחירת קו
 target = st.selectbox("🎯 Select Bus Line:", ["Nearby (10 Closest)"] + unique_lines)
 display_buses = sorted(all_buses, key=lambda x: x['dist'])[:10] if target == "Nearby (10 Closest)" else [b for b in all_buses if b['line'] == target]
 
-# הודעת המרחק
+# מידע על האוטובוס הקרוב
 if display_buses:
     closest = min(display_buses, key=lambda x: x['dist'])
-    st.info(f"🚍 **Closest (Line {closest['line']}):** {closest['dist']:.2f} km")
+    st.info(f"🚍 **Closest: Line {closest['line']} ({closest['dist']:.2f} km)**")
 
-# מפה
+# מפה - שים לב לשינוי ב-width ו-height
 m = folium.Map(location=[user_lat, user_lon], zoom_start=16)
-
-# סימון אדום למיקום המשתמש
-folium.Marker([user_lat, user_lon], tooltip="You are here", icon=folium.Icon(color='red', icon='user', prefix='fa')).add_to(m)
+folium.Marker([user_lat, user_lon], icon=folium.Icon(color='red', icon='user', prefix='fa')).add_to(m)
 
 for b in display_buses:
     icon_html = f'<div style="background-color: #00ccff; width: 30px; height: 30px; border-radius: 50%; border: 2px solid white; display: flex; align-items: center; justify-content: center; color: black; transform: rotate({b["heading"]}deg); font-weight: bold;">↑</div><div style="background: rgba(0,0,0,0.8); padding: 1px 3px; border-radius: 3px; font-size: 10px; position: absolute; top: 32px; color: white; white-space: nowrap;">{b["line"]}</div>'
     folium.Marker(location=[b['lat'], b['lon']], icon=folium.DivIcon(icon_size=(30, 30), icon_anchor=(15, 15), html=icon_html)).add_to(m)
 
-st_folium(m, width=700, height=500, key=f"map_compact_{target}")
+# המפה תתפוס 100% מהרוחב של המכולה הממורכזת
+st_folium(m, width=None, height=450, key=f"map_v4_{target}", use_container_width=True)
 
-# טיימר רענון
+# טיימר
 t_place = st.empty()
 for i in range(30, 0, -1):
     t_place.write(f"Refreshing in {i}s...")
