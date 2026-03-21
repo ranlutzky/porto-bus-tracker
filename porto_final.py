@@ -15,7 +15,7 @@ if 'map_center' not in st.session_state:
 if 'location_mode' not in st.session_state:
     st.session_state.location_mode = 'gps'
 
-# 3. CSS "אגרסיבי" - כפתורים רחבים (50/50) ונמוכים יותר
+# 3. CSS "סופר-אגרסיבי" - כופה רוחב 100% וגובה 40px
 st.markdown("""
     <style>
     .stApp { background-color: #1e1e1e !important; }
@@ -30,60 +30,42 @@ st.markdown("""
         margin: auto !important;
     }
 
-    /* תיקון לכפתורים: הכרחת רוחב מלא בתוך העמודה */
-    div.stButton {
-        width: 100% !important;
+    /* כפיית רוחב מלא על העמודות ועל הכפתורים שבתוכן */
+    [data-testid="column"] [data-testid="stVerticalBlock"] {
+        gap: 0px !important;
     }
-    
+
+    /* הסלקטור הכי חזק לכפתורי Streamlit */
     div.stButton > button {
         width: 100% !important;
-        display: flex !important;
-        justify-content: center !important;
-        align-items: center !important;
         background-color: #333333 !important;
         color: #ffffff !important;
         border: 1px solid #555 !important;
-        height: 45px !important; /* גובה מופחת לפי בקשתך */
+        height: 40px !important; /* גובה מלבני דק */
         font-size: 13px !important;
         font-weight: bold !important;
-        border-radius: 6px !important;
-        margin: 0px !important;
+        border-radius: 4px !important;
+        padding: 0px !important;
+        display: block !important;
     }
     
     div.stButton > button:hover { border-color: #00ccff !important; color: #00ccff !important; }
 
-    /* הסרת מרווחים מהעמודות ליישור מושלם עם המפה */
+    /* הסרת רווחים בין העמודות ליישור עם המפה */
     [data-testid="column"] {
-        padding-left: 2px !important;
-        padding-right: 2px !important;
+        padding-left: 1px !important;
+        padding-right: 1px !important;
     }
 
-    .custom-label {
-        color: white !important;
-        font-size: 13px;
-        font-weight: bold;
-        margin-bottom: 5px;
-    }
+    .custom-label { color: white !important; font-size: 13px; font-weight: bold; margin-bottom: 5px; }
 
-    div[data-baseweb="select"] > div { 
-        background-color: #333333 !important; 
-        border: 1px solid #555 !important;
-    }
+    div[data-baseweb="select"] > div { background-color: #333333 !important; border: 1px solid #555 !important; }
     div[data-baseweb="select"] * { color: white !important; }
 
-    [data-testid="stNotification"] {
-        background-color: #262730 !important;
-        border: 1px solid #00ccff !important;
-    }
+    [data-testid="stNotification"] { background-color: #262730 !important; border: 1px solid #00ccff !important; }
     [data-testid="stNotification"] div { color: #ffffff !important; }
-    .stInfo b { color: #ffff00 !important; }
 
-    .refresh-text {
-        color: #ffffff !important;
-        font-size: 12px;
-        text-align: center;
-        margin-top: 10px;
-    }
+    .refresh-text { color: #ffffff !important; font-size: 12px; text-align: center; margin-top: 10px; }
     .refresh-text b { color: #ffff00 !important; }
     </style>
     """, unsafe_allow_html=True)
@@ -102,7 +84,6 @@ def get_bus_data():
     except: return []
 
 # --- ממשק משתמש ---
-
 st.markdown('<p class="custom-label">SELECT BUS LINE</p>', unsafe_allow_html=True)
 buses_raw = get_bus_data()
 
@@ -128,11 +109,9 @@ display_buses = sorted(all_buses, key=lambda x: x['dist'])[:10] if target == "Ne
 
 if display_buses:
     closest = min(display_buses, key=lambda x: x['dist'])
-    st.markdown(f"""
-        <div style="background-color: #262730; border: 1px solid #00ccff; padding: 10px; border-radius: 5px; text-align: center; color: white; margin-bottom: 10px;">
-            🚍 Closest: <span style="color: #ffff00; font-weight: bold;">Line {closest['line']}</span> is <span style="color: #ffff00; font-weight: bold;">{closest['dist']:.2f} km</span> away
-        </div>
-    """, unsafe_allow_html=True)
+    st.markdown(f'<div style="background-color: #262730; border: 1px solid #00ccff; padding: 10px; border-radius: 5px; text-align: center; color: white; margin-bottom: 10px;">'
+                f'🚍 Closest: <span style="color: #ffff00; font-weight: bold;">Line {closest["line"]}</span> is '
+                f'<span style="color: #ffff00; font-weight: bold;">{closest["dist"]:.2f} km</span> away</div>', unsafe_allow_html=True)
 
 # מפה
 m = folium.Map(location=[user_lat, user_lon], zoom_start=16)
@@ -142,18 +121,16 @@ for b in display_buses:
     icon_html = f'<div style="background-color: #00ccff; width: 30px; height: 30px; border-radius: 50%; border: 2px solid white; display: flex; align-items: center; justify-content: center; color: black; transform: rotate({b["heading"]}deg); font-weight: bold;">↑</div><div style="background: rgba(0,0,0,0.8); padding: 1px 3px; border-radius: 3px; font-size: 10px; position: absolute; top: 32px; color: white; white-space: nowrap;">{b["line"]}</div>'
     folium.Marker(location=[b['lat'], b['lon']], icon=folium.DivIcon(icon_size=(30, 30), icon_anchor=(15, 15), html=icon_html)).add_to(m)
 
-st_folium(m, width=None, height=450, key=f"map_v19_{target}_{st.session_state.location_mode}", use_container_width=True)
+st_folium(m, width=None, height=450, key=f"map_v20_{target}_{st.session_state.location_mode}", use_container_width=True)
 
-# --- כפתורי מיקום: 50/50 בשורה אחת ---
+# --- כפתורי מיקום: 50/50 ---
 col1, col2 = st.columns(2)
-
 with col1:
-    if st.button("📍 MY LOCATION"):
+    if st.button("📍 MY LOCATION", use_container_width=True):
         st.session_state.location_mode = 'gps'
         st.rerun()
-
 with col2:
-    if st.button("🏠 HOME (PORTO)"):
+    if st.button("🏠 HOME (PORTO)", use_container_width=True):
         st.session_state.location_mode = 'manual'
         st.session_state.map_center = (41.1485, -8.6110)
         st.rerun()
