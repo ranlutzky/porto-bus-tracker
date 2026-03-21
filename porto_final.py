@@ -6,14 +6,34 @@ from streamlit_folium import st_folium
 from math import radians, cos, sin, asin, sqrt
 from streamlit_js_eval import get_geolocation
 
-# ייבוא מאגר התחנות מהקובץ החיצוני
-try:
-    from stops import STATIC_STOPS
-    # שורת בדיקה - תמחק אותה אחרי שזה עובד
-    st.sidebar.write(f"Loaded {len(STATIC_STOPS)} stops from file") 
-except ImportError:
-    st.sidebar.error("Could not find stops.py file!")
-    STATIC_STOPS = []
+# --- מאגר תחנות סטטי (מוטמע ישירות למניעת שגיאות ייבוא) ---
+STATIC_STOPS = [
+    {"name": "Aliados", "lat": 41.1485, "lon": -8.6110},
+    {"name": "Praça da República", "lat": 41.1554, "lon": -8.6133},
+    {"name": "Trindade", "lat": 41.1523, "lon": -8.6125},
+    {"name": "S. Bento", "lat": 41.1456, "lon": -8.6103},
+    {"name": "Cordoaria", "lat": 41.1465, "lon": -8.6148},
+    {"name": "Bolhão", "lat": 41.1498, "lon": -8.6061},
+    {"name": "Casa da Música", "lat": 41.1587, "lon": -8.6307},
+    {"name": "Hospital S. João", "lat": 41.1804, "lon": -8.6015},
+    {"name": "Campanhã", "lat": 41.1492, "lon": -8.5855},
+    {"name": "Marquês", "lat": 41.1602, "lon": -8.6061},
+    {"name": "Rotunda Boavista", "lat": 41.1579, "lon": -8.6291},
+    {"name": "Foz (Castelo)", "lat": 41.1478, "lon": -8.6710},
+    {"name": "Batalha", "lat": 41.1438, "lon": -8.6065},
+    {"name": "Carmo", "lat": 41.1472, "lon": -8.6163},
+    {"name": "Lapa", "lat": 41.1560, "lon": -8.6160},
+    {"name": "Pr. Galiza", "lat": 41.1508, "lon": -8.6258},
+    {"name": "Fluvial", "lat": 41.1462, "lon": -8.6535},
+    {"name": "Antas (Estádio)", "lat": 41.1615, -8.5828},
+    {"name": "Polo Universitário", "lat": 41.1745, -8.6048},
+    {"name": "Boavista (Bom Sucesso)", "lat": 41.1555, -8.6285},
+    {"name": "Jardim do Morro", "lat": 41.1385, "lon": -8.6095},
+    {"name": "Ribeira", "lat": 41.1405, "lon": -8.6115},
+    {"name": "Gonçalo Cristóvão", "lat": 41.1541, "lon": -8.6105},
+    {"name": "Antero de Quental", "lat": 41.1595, "lon": -8.6130},
+    {"name": "Faculdade de Letras", "lat": 41.1495, "lon": -8.6355}
+]
 
 # 1. הגדרות עמוד
 st.set_page_config(page_title="Porto Bus Tracker", layout="wide")
@@ -98,7 +118,7 @@ for b in display_buses:
     icon_html = f'<div style="background-color: #00ccff; width: 30px; height: 30px; border-radius: 50%; border: 2px solid white; display: flex; align-items: center; justify-content: center; color: black; transform: rotate({b["heading"]}deg); font-weight: bold;">↑</div><div style="background: rgba(0,0,0,0.8); padding: 1px 3px; border-radius: 3px; font-size: 10px; position: absolute; top: 32px; color: white; white-space: nowrap; font-weight: bold;">{b["line"]}</div>'
     folium.Marker([b['lat'], b['lon']], icon=folium.DivIcon(icon_size=(30, 30), html=icon_html), popup=folium.Popup(popup_html, max_width=200)).add_to(m)
 
-st_folium(m, width=None, height=450, key="map_v46", use_container_width=True)
+st_folium(m, width=None, height=450, key="map_v47", use_container_width=True)
 
 # תיבת מרחק
 if display_buses:
